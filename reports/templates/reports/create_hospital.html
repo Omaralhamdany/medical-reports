@@ -1,0 +1,97 @@
+{% load static %}
+{% load hospital_tags %}
+
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>إضافة مستشفى</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fb;
+            padding: 40px;
+            direction: rtl;
+        }
+        .card {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; }
+        input, button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #d9dee8;
+            box-sizing: border-box;
+        }
+        button {
+            background: #1a5276;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .error {
+            background: #fdecea;
+            color: #a42828;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        a {
+            display: inline-block;
+            margin-top: 15px;
+            color: #1a5276;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>إضافة مستشفى جديد</h2>
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="name_ar">اسم المستشفى بالعربية</label>
+                <input type="text" id="name_ar" name="name_ar" value="{{ name_ar }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="name_en">اسم المستشفى بالإنجليزية</label>
+                <input type="text" id="name_en" name="name_en" value="{{ name_en }}">
+            </div>
+
+            <div class="form-group">
+                <label for="address">العنوان</label>
+                <input type="text" id="address" name="address" value="{{ address }}">
+            </div>
+
+            <div class="form-group">
+                <label for="phone">رقم الهاتف</label>
+                <input type="text" id="phone" name="phone" value="{{ phone }}">
+            </div>
+
+            <div class="form-group">
+                <label for="logo">شعار المستشفى</label>
+                <input type="file" id="logo" name="logo" accept="image/*">
+            </div>
+
+            <button type="submit">حفظ المستشفى</button>
+        </form>
+
+        <a href="{% url 'reports:create_report' %}">العودة إلى إنشاء التقرير</a>
+    </div>
+</body>
+</html>

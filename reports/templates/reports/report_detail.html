@@ -1,0 +1,1038 @@
+{% load static %}
+{% load hospital_tags %}
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التقرير الطبي - {{ report.serial_no }}</title>
+    <style>
+        /* ===== إعادة تعيين ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            padding: 30px;
+            color: #000;
+            direction: rtl;
+        }
+
+        /* ===== حاوية التقرير ===== */
+        .a4-container {
+            max-width: 820px;
+            min-height: 1120px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px 45px 25px 45px;
+            box-sizing: border-box;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
+            position: relative;
+        }
+
+        /* ===== الهيدر العلوي ===== */
+        .header-image-container {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header-image-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+            max-width: 100%;
+        }
+
+        /* ===== العنوان الرئيسي ===== */
+        /* ===== العنوان الرئيسي ===== */
+        .report-main-title {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .title-arabic {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1d70b8;
+            margin: 0;
+        }
+
+        .title-english {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1d70b8;
+            margin: 0;
+        }
+
+        /* ===== الجدول ===== */
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #b3c2d1;
+            font-size: 13px;
+            margin-bottom: 25px;
+        }
+
+        .report-table td {
+            border: 1px solid #dcdddd;
+            padding: 13px 12px;
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        /* ===== تلوين الصفوف بالتناوب (بدءاً من الصف الثالث) ===== */
+        /* الصف الثالث، الخامس، السابع... - أبيض */
+        .report-table tr:nth-child(1) td,
+        .report-table tr:nth-child(3) td,
+        .report-table tr:nth-child(5) td,
+        .report-table tr:nth-child(7) td,
+        .report-table tr:nth-child(9) td,
+        .report-table tr:nth-child(11) td,
+        .report-table tr:nth-child(13) td,
+        .report-table tr:nth-child(15) td {
+            background-color: #ffffff !important;
+        }
+
+        /* الصف الرابع، السادس، الثامن... - رمادي غامق */
+        .report-table tr:nth-child(4) td,
+        .report-table tr:nth-child(6) td,
+        .report-table tr:nth-child(8) td,
+        .report-table tr:nth-child(10) td,
+        .report-table tr:nth-child(12) td,
+        .report-table tr:nth-child(14) td,
+        .report-table tr:nth-child(16) td {
+            background-color: #f8f7f7 !important;
+        }
+
+        /* ===== تلوين خاص للصف المميز (الأزرق الداكن) ===== */
+        .highlighted-row td {
+            background-color: #112e61 !important;
+            color: #ffffff !important;
+            border-color: #2a416d;
+        }
+
+        .highlighted-row td:nth-child(1),
+        .highlighted-row td:nth-child(2),
+        .highlighted-row td:nth-child(3),
+        .highlighted-row td:nth-child(4) {
+            background-color: #112e61 !important;
+            color: #ffffff !important;
+        }
+
+        /* ===== تلوين خاص لرمز الإجازة (أزرق غامق جداً) ===== */
+        .serial-number-cell {
+            color: #0d42e0 !important;
+            font-weight: 800 !important;
+            font-size: 14px !important;
+        }
+
+        /* ===== تلوين نصوص العمود 2 و 3 باللون #00335f ===== */
+        .report-table td:nth-child(2),
+        .report-table td:nth-child(3) {
+            color: #0d487a !important;
+            font-weight: 500;
+        }
+
+        /* ===== استثناء العمود الثالث في الصفوف 1 و 5 و 7 (يبقى #1d70b8) ===== */
+        .report-table tr:nth-child(1) td:nth-child(3),
+        .report-table tr:nth-child(5) td:nth-child(3),
+        .report-table tr:nth-child(7) td:nth-child(3) {
+            color: #1d70b8 !important;
+        }
+
+        .report-table tr:nth-child(2) td:nth-child(2),
+        .report-table tr:nth-child(2) td:nth-child(3) {
+            color: #ffffff !important;
+        }
+
+        .report-table tr:nth-child(1) td:nth-child(2) {
+            color: #334c70 !important;
+            
+        }
+
+        /* ===== تنسيق النصوص داخل الخلايا (الأعمدة 1 و 4) ===== */
+        .report-table td:nth-child(1),
+        .report-table td:nth-child(4) {
+            color: #1d70b8;
+            font-weight: 700;
+        }
+
+        /* ===== عرض الأرقام بالإنجليزية في الخلايا العربية ===== */
+        .value-cell-split-ar {
+            direction: ltr !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* ===== تنسيق خاص للخلايا المدمجة (colspan) ===== */
+        .report-table td[colspan] {
+            background-color: inherit !important;
+        }
+
+        .label-cell-en {
+            width: 10%;
+            color: #1d70b8;
+            font-weight: 700;
+            background-color: #f8f9fa;
+            font-size: 12px;
+        }
+
+        .label-cell-ar {
+            width: 10%;
+            color: #1d70b8;
+            font-weight: 700;
+            background-color: #f8f9fa;
+            font-size: 12px;
+        }
+
+        .value-cell-single {
+            width: 18%;
+            color: #333;
+            font-weight: 500;
+            font-size: 12px;
+        }
+
+        .value-cell-split-en {
+            width: 21%;
+            color: #333;
+            font-weight: 500;
+            font-size: 12px;
+            direction: ltr;
+        }
+
+        .value-cell-split-ar {
+            width: 18%;
+            color: #333;
+            font-weight: 500;
+            font-size: 12px;
+            direction: rtl;
+        }
+
+        /* ===== الصف المميز (باللون الأزرق الداكن) ===== */
+        .highlighted-row {
+            background-color: #112e61 !important;
+        }
+
+        .highlighted-row td {
+            color: #ffffff !important;
+            border-color: #2a416d;
+            padding: 10px 0px;
+        }
+
+        .highlighted-row .label-cell-en,
+        .highlighted-row .label-cell-ar {
+            color: #ffffff !important;
+            background-color: #112e61 !important;
+        }
+
+        /* ===== الفوتر ===== */
+        .footer-grid {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-top: 10px;
+            gap: 30px;
+            padding-top: 15px;
+        }
+
+        .footer-grid::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 1px;
+            background-color: #b3c2d1;
+            transform: translateX(-50%);
+        }
+
+        /* ===== القسم الأيسر: الباركود ونص التحقق ===== */
+        .footer-left {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .footer-left .barcode-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .footer-left .barcode-wrapper img {
+            width: 90px;
+            height: 90px;
+            object-fit: contain;
+        }
+
+        .verify-text-ar {
+            font-size: 11px;
+            font-weight: 700;
+            color: #000;
+            margin: 10px 0 2px 0;
+        }
+
+        .verify-text-en {
+            font-size: 11px;
+            font-weight: 700;
+            color: #000;
+            margin: 0 0 4px 0;
+        }
+
+        .verify-link {
+            font-size: 11px;
+            color: #0056b3;
+            text-decoration: underline;
+            font-weight: 700;
+            font-family: Arial, sans-serif;
+            word-break: break-all;
+        }
+
+        /* ===== القسم الأيمن: شعار المستشفى + الوقت والتاريخ ===== */
+        .footer-right {
+            flex: 1;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* ===== الخط الفاصل العمودي القصير ===== */
+        .footer-grid::before {
+            content: '';
+            position: absolute;
+            right: 47%;
+            top: 65%;
+            height: 23%;
+            width: 2px;
+            background-color: #dcdddd;
+            transform: translateX(100%);
+        }
+
+        /* ===== حجم الشعار الجديد (مصغر) ===== */
+        .hospital-logo-footer {
+            max-width: 200px;
+            max-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .hospital-logo-footer img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .hospital-logo-footer .default-logo {
+            font-size: 60px;
+            color: #ccc;
+        }
+
+        .footer-right .timestamp-box {
+            font-size: 120px;
+            font-weight: 700;
+            color: #333;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .footer-right .timestamp-box .time {
+            font-size: 10px;
+            margin-right: 290px;
+            margin-top: 20px;
+            
+            padding: 0;
+        }
+
+        .footer-right .timestamp-box .date {
+            font-size: 10px;
+            margin-right: 250px;
+            margin-top: 10px;
+            
+            padding: 0;
+        }
+
+        /* ===== شريط الطباعة ===== */
+        .top-bar {
+            max-width: 820px;
+            margin: 0 auto 15px auto;
+        }
+
+        .btn-print {
+            width: 100%;
+            padding: 14px;
+            background-color: #1d70b8;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-print:hover {
+            background-color: #112e61;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(29, 112, 184, 0.3);
+        }
+
+        /* ===== عند الطباعة ===== */
+        @media print {
+            body {
+                background-color: #fff;
+                padding: 0;
+                margin: 0;
+            }
+
+            .a4-container {
+                border: none;
+                box-shadow: none;
+                padding: 15px 25px;
+                min-height: auto;
+                max-width: 100%;
+            }
+
+            .top-bar {
+                display: none !important;
+            }
+
+            .report-table {
+                page-break-inside: avoid;
+            }
+
+            .divider-line {
+                background-color: #b3c2d1 !important;
+                height: 2px;
+                margin: 15px 0 10px 0;
+            }
+
+            .footer-grid::before {
+                content: '';
+                position: absolute;
+                right: 46.5%;
+                top: 0%;
+                height: 65%;
+                width: 1px;
+                background-color: #dcdddd !important;
+                transform: translateX(50%);
+            }
+
+            .footer-grid {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: flex-start !important;
+                gap: 30px;
+                position: relative;
+                border-top: none !important;
+                padding-top: 0 !important;
+            }
+
+            .footer-left,
+            .footer-right {
+                flex: 1;
+                padding: 10px 15px;
+            }
+
+            .footer-left {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                margin: 0;
+                padding: 0;
+            }
+
+            .footer-right {
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                margin: 0;
+                padding: 0;
+            }
+
+            .verify-link {
+                color: #0056b3 !important;
+                text-decoration: underline !important;
+            }
+
+            .barcode-wrapper img {
+                max-width: 90px;
+                max-height: 90px;
+            }
+
+            .hospital-logo-footer {
+                max-width: 200px;
+                max-height: 150px;
+            }
+
+            .hospital-logo-footer img {
+                max-width: 100%;
+                max-height: 100%;
+                object-fit: contain;
+            }
+
+            .footer-grid {
+                page-break-inside: avoid;
+                
+            }
+        }
+
+        /* ===== التجاوب ===== */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+
+            .a4-container {
+                padding: 20px;
+                min-height: auto;
+            }
+
+            .report-table {
+                font-size: 110px;
+            }
+
+            .report-table td {
+                padding: 6px 4px;
+            }
+
+            .footer-grid {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+            }
+
+            .footer-left,
+            .footer-right {
+                width: 100%;
+            }
+
+            .footer-grid::before {
+                display: none;
+            }
+
+            .title-arabic {
+                font-size: 20px;
+            }
+
+            .title-english {
+                font-size: 13px;
+            }
+
+            .hospital-logo-footer {
+                max-width: 80px;
+                max-height: 80px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .a4-container {
+                padding: 10px;
+            }
+
+            .report-table {
+                font-size: 9px;
+            }
+
+            .report-table td {
+                padding: 4px 3px;
+            }
+
+            .label-cell-en,
+            .label-cell-ar {
+                font-size: 8px;
+            }
+
+            .value-cell-single,
+            .value-cell-split-en,
+            .value-cell-split-ar {
+                font-size: 8px;
+            }
+
+            .title-arabic {
+                font-size: 16px;
+            }
+
+            .title-english {
+                font-size: 11px;
+            }
+
+            .footer-left .barcode-wrapper img {
+                width: 60px;
+                height: 60px;
+            }
+
+            .hospital-logo-footer {
+                max-width: 60px;
+                max-height: 60px;
+            }
+
+            .hospital-logo-footer .default-logo {
+                font-size: 30px;
+            }
+
+            .footer-grid::before {
+                display: none;
+            }
+        }
+    </style>
+
+    
+</head>
+<body>
+
+    <!-- ===== شريط الطباعة ===== -->
+    <div class="top-bar">
+        <button class="btn-print" onclick="window.print()">
+            🖨️ طباعة أو حفظ التقرير كملف PDF
+        </button>
+    </div>
+
+    <!-- ===== التقرير ===== -->
+    <div class="a4-container">
+
+        <!-- ===== الهيدر العلوي ===== -->
+        <div class="header-image-container">
+            <img src="{% static 'images/7.png' %}" alt="Seha Header">
+        </div>
+
+        <!-- ===== العنوان ===== -->
+        <div class="report-main-title">
+            <h1 class="title-arabic">تقرير إجازة مرضية</h1>
+            <h2 class="title-english">Sick Leave Report</h2>
+        </div>
+
+        <!-- ===== الجدول ===== -->
+        <table class="report-table">
+            <tr>
+                <td class="label-cell-ar">رمز الإجازة</td>
+                <td class="value-cell-single serial-number-cell" colspan="2">{{ report.serial_no }}</td>
+                <td class="label-cell-en">Leave ID</td>
+            </tr>
+            <!-- في صف مدة الإجازة -->
+            <!-- في صف مدة الإجازة -->
+            <!-- صف مدة الإجازة -->
+            <tr class="highlighted-row">
+                <td class="label-cell-ar">مدة الإجازة</td>
+                <td class="value-cell-split-ar">
+                    
+                    (&lrm;{{ report.date_in_hijri|convert_hijri_month_to_number }}&lrm; إلى &lrm;{{ report.date_out_hijri|convert_hijri_month_to_number }}&lrm;) يوم
+
+                    &lrm;{{ report.days_count|convert_to_english_numbers }}&lrm;
+                </td>
+
+                <td class="value-cell-split-en" style="direction:ltr;">
+                    {{ report.days_count|convert_to_english_numbers }} day
+                    (
+                    {{ report.get_date_in_display }}
+                    to
+                    {{ report.get_date_out_display }}
+                    )
+                </td>
+
+                <td class="label-cell-en">Leave Duration</td>
+            </tr>
+
+            <tr>
+                <td class="label-cell-ar">تاريخ الدخول</td>
+                <td class="value-cell-split-ar" style="direction: ltr;">{{ report.date_in_hijri|default:"-"|convert_hijri_month_to_number }}</td>
+                <td class="value-cell-split-en">{{ report.get_date_in_display|default:"-" }}</td>
+                <td class="label-cell-en">Admission Date</td>
+            </tr>
+
+            <tr>
+                <td class="label-cell-ar">تاريخ الخروج</td>
+                <td class="value-cell-split-ar" style="direction: ltr;">{{ report.date_out_hijri|default:"-"|convert_hijri_month_to_number }}</td>
+                <td class="value-cell-split-en">{{ report.get_date_out_display|default:"-" }}</td>
+                <td class="label-cell-en">Discharge Date</td>
+            </tr>
+
+
+            <tr>
+                <td class="label-cell-ar">تاريخ إصدار التقرير</td>
+                <td class="value-cell-single" colspan="2">{{ report.issue_date|date:"d/m/Y"|default:"-" }}</td>
+                <td class="label-cell-en">Issue Date</td>
+            </tr>
+            <tr>
+                <td class="label-cell-ar">الاسم</td>
+                <td class="value-cell-split-ar">{{ report.patient.name_ar }}</td>
+                <td class="value-cell-split-en">{{ report.patient.name_en|default:report.patient.name_ar }}</td>
+                <td class="label-cell-en">Name</td>
+            </tr>
+            <tr>
+                <td class="label-cell-ar">رقم الهوية / الإقامة</td>
+                <td class="value-cell-single" colspan="2">{{ report.patient.national_id }}</td>
+                <td class="label-cell-en">National ID / Iqama</td>
+            </tr>
+            <tr>
+                <td class="label-cell-ar">الجنسية</td>
+                <td class="value-cell-split-ar">
+                    {{ report.patient.nationality_ar|default:"-" }}
+                </td>
+                <td class="value-cell-split-en">
+                    {{ report.patient.nationality_en|default:report.patient.nationality_ar|default:"-" }}
+                </td>
+                <td class="label-cell-en">Nationality</td>
+            </tr>
+            <tr>
+                <td class="label-cell-ar">جهة العمل</td>
+                <td class="value-cell-single" colspan="1">
+                    {{ report.patient.employer|default:"-" }}</td>
+                <td class="value-cell-split-en">
+                </td>
+                    
+                <td class="label-cell-en">Employer</td>
+            </tr>
+            <tr>
+                <td class="label-cell-ar">اسم الممارس</td>
+                <td class="value-cell-split-ar">
+                    {% if primary_doctor %}
+                        {{ primary_doctor.name_ar|default:"-" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="value-cell-split-en">
+                    {% if primary_doctor %}
+                        {{ primary_doctor.name_en|default:primary_doctor.name_ar|default:"-" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="label-cell-en">Physician Name</td>
+            </tr>
+
+            <!-- ===== المسمى الوظيفي ===== -->
+            <tr>
+                <td class="label-cell-ar">المسمى الوظيفي</td>
+                <td class="value-cell-split-ar">
+                    {% if primary_doctor %}
+                        {{ primary_doctor.specialty_ar|default:"-" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="value-cell-split-en">
+                    {% if primary_doctor %}
+                        {{ primary_doctor.specialty_en|default:primary_doctor.specialty_ar|default:"-" }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="label-cell-en">Position</td>
+            </tr>
+        </table>
+
+        <!-- ===== الفوتر ===== -->
+        <div class="footer-grid">
+
+            <!-- ===== القسم الأيسر: شعار المستشفى ===== -->
+            <div class="footer-left">
+                <!-- شعار المستشفى من قاعدة البيانات -->
+                <div class="hospital-logo-footer">
+                    {% if primary_hospital and primary_hospital.logo %}
+                        <img src="{{ primary_hospital.logo.url }}" 
+                             alt="شعار {{ primary_hospital.name_ar }}"
+                             onerror="this.style.display='none'; this.parentElement.querySelector('.default-logo').style.display='block'">
+                        <div class="default-logo" style="display: none;">🏥</div>
+                    {% elif hospital_logo_url %}
+                        <img src="{{ hospital_logo_url }}" 
+                             alt="شعار المستشفى"
+                             onerror="this.style.display='none'; this.parentElement.querySelector('.default-logo').style.display='block'">
+                        <div class="default-logo" style="display: none;">🏥</div>
+                    {% elif primary_hospital %}
+                        <div class="default-logo">🏥</div>
+                        <span style="font-size:12px; color:#666; display:block; margin-top:5px;">{{ primary_hospital.name_ar }}</span>
+                    {% else %}
+                        <div class="default-logo">🏥</div>
+                    {% endif %}
+                </div>
+
+                <div class="center-logo">
+                    <img src="{% static 'images/المركز الطبي.jpg' %}" 
+                        alt="المركز الطبي" 
+                        style="margin-top: 20px; margin-left: 200px; width: 150px; height: auto;">
+
+                </div>            </div>
+
+            <!-- ===== القسم الأيمن: الوقت والتاريخ ===== -->
+            <div class="footer-right">
+                 <!-- الباركود -->
+                <div class="barcode-wrapper">
+                    {% if report.barcode_image %}
+                        <a href="{% url 'reports:report_inquiry' %}?code={{ report.serial_no }}" target="_blank">
+                            <img src="{{ report.barcode_image.url }}" alt="QR Code">
+                        </a>
+                    {% else %}
+                        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==" alt="Barcode">
+                    {% endif %}
+                </div>
+                
+                <p class="verify-text-ar">للتحقق من بيانات التقرير يرجى التأكد من زيارة موقع منصة صحة الرسمي</p>
+                <p class="verify-text-en">To check the report please visit Seha's official website</p>
+                
+                <a href="{% url 'reports:report_inquiry' %}?code={{ report.serial_no }}" 
+                   class="verify-link" 
+                   target="_blank">
+                    www.seha.saa/#/inquiries/slenquiry
+                </a>
+
+                <div class="timestamp-box">
+                    <div class="time" id="val-time">-</div>
+                    <div class="date" id="val-date">-</div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- ===== JavaScript ===== -->
+    <!-- ============================================================ -->
+
+    <script>
+        // ============================================================
+        // 🔥 بيانات التقرير من Django
+        // ============================================================
+        const reportData = {
+            serialNo: "{{ report.serial_no }}",
+            days: "{{ report.days_count }}",
+            dateIn: "{{ report.get_date_in_display }}",
+            dateInHijri: "{{ report.date_in_hijri|default:'' }}",
+            dateOut: "{{ report.get_date_out_display }}",
+            dateOutHijri: "{{ report.date_out_hijri|default:'' }}",
+            issueDate: "{{ report.issue_date|date:'d/m/Y' }}",
+            nameEn: "{{ report.patient.name_en|default:'' }}",
+            nameAr: "{{ report.patient.name_ar }}",
+            nationalId: "{{ report.patient.national_id }}",
+            nationality: "{{ report.patient.nationality_ar|default:'سعودي / Saudi' }}",
+            employer: "{{ report.patient.employer|default:'' }}",
+            doctorEn: "{{ primary_doctor.name_en|default:'' }}",
+            doctorAr: "{{ primary_doctor.name_ar|default:'' }}",
+            specialty: "{{ primary_doctor.specialty_ar|default:'طبيب عام / General Practitioner' }}",
+            hospitalAr: "{{ primary_hospital.name_ar|default:'' }}",
+            hospitalEn: "{{ primary_hospital.name_en|default:'' }}",
+        };
+
+        // ============================================================
+        // 🔥 دالة تحويل اسم الشهر الهجري إلى رقم
+        // ============================================================
+        function convertHijriMonthToNumber(hijriDate) {
+            if (!hijriDate || hijriDate === '-' || hijriDate === '') return hijriDate;
+            
+            const monthMap = {
+                'محرم': '01',
+                'صفر': '02',
+                'ربيع الأول': '03',
+                'ربيع الاول': '03',
+                'ربيع الآخر': '04',
+                'ربيع الثاني': '04',
+                'ربيع الاوّل': '03',
+                'جمادى الأولى': '05',
+                'جمادى الاولى': '05',
+                'جمادى الآخرة': '06',
+                'جمادى الثانية': '06',
+                'رجب': '07',
+                'شعبان': '08',
+                'رمضان': '09',
+                'شوال': '10',
+                'ذو القعدة': '11',
+                'ذو الحجة': '12'
+            };
+            
+            let result = hijriDate;
+            
+            for (const [month, number] of Object.entries(monthMap)) {
+                if (hijriDate.includes(month)) {
+                    result = hijriDate.replace(month, number);
+                    break;
+                }
+            }
+            
+            return result;
+        }
+
+        // ============================================================
+        // عرض البيانات
+        // ============================================================
+        window.onload = function() {
+            try {
+                const valSerial = document.getElementById('val-serial');
+                if (valSerial) valSerial.innerText = reportData.serialNo || '-';
+
+                const days = reportData.days || '0';
+                const dateIn = reportData.dateIn || '';
+                const dateOut = reportData.dateOut || '';
+                const dateInHijri = reportData.dateInHijri || '';
+                const dateOutHijri = reportData.dateOutHijri || '';
+
+                const dateInHijriNumbers = convertHijriMonthToNumber(dateInHijri);
+                const dateOutHijriNumbers = convertHijriMonthToNumber(dateOutHijri);
+
+                const leaveDurationAr = document.getElementById('leave-duration-ar');
+                const leaveDurationEn = document.getElementById('leave-duration-en');
+                
+                if (leaveDurationAr && dateInHijriNumbers && dateOutHijriNumbers) {
+                    leaveDurationAr.innerText = `${days} يوم (${dateInHijriNumbers} إلى ${dateOutHijriNumbers})`;
+                } else if (leaveDurationAr) {
+                    leaveDurationAr.innerText = `${days} يوم`;
+                }
+                
+                if (leaveDurationEn && dateIn && dateOut) {
+                    leaveDurationEn.innerText = `${days} Day(s) (${dateIn} to ${dateOut})`;
+                } else if (leaveDurationEn) {
+                    leaveDurationEn.innerText = `${days} Day(s)`;
+                }
+
+                const valInEn = document.getElementById('val-inEn');
+                const valInAr = document.getElementById('val-inAr');
+                if (valInEn) valInEn.innerText = reportData.dateIn || '-';
+                if (valInAr) valInAr.innerText = dateInHijriNumbers || '-';
+
+                const valOutEn = document.getElementById('val-outEn');
+                const valOutAr = document.getElementById('val-outAr');
+                if (valOutEn) valOutEn.innerText = reportData.dateOut || '-';
+                if (valOutAr) valOutAr.innerText = dateOutHijriNumbers || '-';
+
+                const valIssueDate = document.getElementById('val-issueDate');
+                if (valIssueDate) valIssueDate.innerText = reportData.issueDate || '-';
+
+                const valNameEn = document.getElementById('val-nameEn');
+                const valNameAr = document.getElementById('val-nameAr');
+                if (valNameEn) valNameEn.innerText = reportData.nameEn || '-';
+                if (valNameAr) valNameAr.innerText = reportData.nameAr || '-';
+
+                const valNatId = document.getElementById('val-natId');
+                if (valNatId) valNatId.innerText = reportData.nationalId || '-';
+
+                const valNatEn = document.getElementById('val-natEn');
+                const valNatAr = document.getElementById('val-natAr');
+                if (reportData.nationality) {
+                    const parts = reportData.nationality.split(' / ');
+                    if (valNatEn) valNatEn.innerText = parts[1] || parts[0] || '-';
+                    if (valNatAr) valNatAr.innerText = parts[0] || '-';
+                } else {
+                    if (valNatEn) valNatEn.innerText = '-';
+                    if (valNatAr) valNatAr.innerText = '-';
+                }
+
+                const valEmployer = document.getElementById('val-employer');
+                if (valEmployer) valEmployer.innerText = reportData.employer || '-';
+
+                const valDocEn = document.getElementById('val-docEn');
+                const valDocAr = document.getElementById('val-docAr');
+                if (valDocEn) valDocEn.innerText = reportData.doctorEn || '-';
+                if (valDocAr) valDocAr.innerText = reportData.doctorAr || '-';
+
+                const valPosEn = document.getElementById('val-posEn');
+                const valPosAr = document.getElementById('val-posAr');
+                if (reportData.specialty) {
+                    const parts = reportData.specialty.split(' / ');
+                    if (valPosEn) valPosEn.innerText = parts[1] || parts[0] || '-';
+                    if (valPosAr) valPosAr.innerText = parts[0] || '-';
+                } else {
+                    if (valPosEn) valPosEn.innerText = '-';
+                    if (valPosAr) valPosAr.innerText = '-';
+                }
+
+                const valHospital = document.getElementById('val-hospital');
+                if (valHospital) valHospital.innerText = reportData.hospitalAr || '-';
+
+                if (reportData.hospitalAr) {
+                    const nameDisplay = document.getElementById('hospital-name-display');
+                    if (nameDisplay) nameDisplay.innerText = reportData.hospitalAr;
+                }
+
+                updateHospitalLogo(reportData);
+
+            } catch(e) {
+                console.error('حدث خطأ أثناء تعيين البيانات:', e);
+            }
+
+            try {
+                const now = new Date();
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                const hours12 = (hours % 12 || 12).toString().padStart(2, '0');
+
+                const valTime = document.getElementById('val-time');
+                const valDate = document.getElementById('val-date');
+                
+                if (valTime) {
+                    valTime.innerText = `${ampm} ${hours12}:${minutes}`;
+                }
+                
+                if (valDate) {
+                    valDate.innerText = now.toLocaleDateString('en-GB', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+                }
+            } catch(e) {
+                console.error('حدث خطأ أثناء تعيين الوقت والتاريخ:', e);
+            }
+        };
+
+        function updateHospitalLogo(data) {
+            try {
+                const hospitalName = data?.hospitalAr;
+                if (!hospitalName) return;
+
+                const container = document.getElementById('footer-logo-container');
+                if (!container) return;
+
+                const logoUrl = `/static/images/hospital_logos/${encodeURIComponent(hospitalName)}.png`;
+
+                fetch(logoUrl, { method: 'HEAD' })
+                    .then(response => {
+                        if (response.ok) {
+                            container.innerHTML = `
+                                <img src="${logoUrl}" 
+                                    alt="شعار ${hospitalName}" 
+                                    style="width: 50px; height: 50px; object-fit: contain;"
+                                    onerror="this.style.display='none'; this.parentElement.querySelector('.default-logo').style.display='block'">
+                                <div class="default-logo" style="display: none;">🏥</div>
+                            `;
+                        } else {
+                            container.innerHTML = `<div class="default-logo">🏥</div>`;
+                        }
+                    })
+                    .catch(() => {
+                        container.innerHTML = `<div class="default-logo">🏥</div>`;
+                    });
+
+            } catch(e) {
+                console.error('خطأ في تحديث الشعار:', e);
+            }
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: medical-reports
+    runtime: python
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    startCommand: gunicorn New_project.wsgi:application
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: "medical-reports.onrender.com"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: medical-reports-db
+          property: connectionString
+      - key: DEEPL_API_KEY
+        sync: false
+
+databases:
+  - name: medical-reports-db
+    databaseName: medical_reports
+    user: medical_reports

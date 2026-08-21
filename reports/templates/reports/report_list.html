@@ -1,0 +1,1053 @@
+{% load static %}
+{% load hospital_tags %}
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قائمة التقارير الطبية - صحة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a5276;
+            --primary-light: #2e86c1;
+            --primary-dark: #0e2f44;
+            --secondary: #27ae60;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --bg: #eaf2f8;
+            --card: #ffffff;
+            --border: #d5dbdb;
+            --text: #17202a;
+            --text-light: #5d6d7e;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ===== الهيدر ===== */
+        .header {
+            background: var(--primary-dark);
+            padding: 0 40px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .header .nav {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .header .nav a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-size: 15px;
+            transition: 0.3s;
+            padding: 6px 0;
+            border-bottom: 2px solid transparent;
+        }
+
+        .header .nav a:hover,
+        .header .nav a.active {
+            color: white;
+            border-bottom-color: var(--secondary);
+        }
+
+        /* ===== Breadcrumb ===== */
+        .breadcrumb {
+            padding: 16px 40px;
+            background: white;
+            font-size: 14px;
+            color: var(--text-light);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+
+        .breadcrumb span {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        /* ===== الحاوية ===== */
+        .main-container {
+            padding: 0 40px 40px;
+            flex: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* ===== رأس الصفحة ===== */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .page-header h1 {
+            font-size: 24px;
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-header .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .page-header .stats span {
+            background: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .page-header .stats strong {
+            color: var(--primary);
+        }
+
+        /* ===== أزرار الإجراءات ===== */
+        .actions-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(26, 82, 118, 0.3);
+        }
+
+        .btn-success {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #1e8449;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-light);
+            border: 2px solid var(--border);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 12px;
+        }
+
+        .btn-filter {
+            background: var(--primary-light);
+            color: white;
+        }
+
+        .btn-filter:hover {
+            background: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        /* ===== الجدول ===== */
+        .table-container {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .report-table thead {
+            background: var(--primary-dark);
+            color: white;
+        }
+
+        .report-table thead th {
+            padding: 14px 16px;
+            text-align: center;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .report-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: 0.2s;
+        }
+
+        .report-table tbody tr:hover {
+            background: #f7fbfe;
+        }
+
+        .report-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .report-table tbody td {
+            padding: 12px 16px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .report-table tbody tr.inactive-row {
+            background: #fdf2f2;
+            opacity: 0.85;
+        }
+
+        .report-table tbody tr.inactive-row:hover {
+            background: #fce8e8;
+        }
+
+        /* ===== حالة التقرير ===== */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge-active {
+            background: #d5f5e3;
+            color: #1a7a3a;
+        }
+
+        .status-badge-inactive {
+            background: #fadbd8;
+            color: #922b21;
+        }
+
+        .status-badge-completed {
+            background: #d6eaf8;
+            color: #1a5276;
+        }
+
+        /* ===== روابط الإجراءات ===== */
+        .action-links {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .action-links a {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 4px;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+
+        .action-links a:hover {
+            background: var(--bg);
+        }
+
+        .action-links a.delete {
+            color: var(--danger);
+        }
+
+        .action-links a.delete:hover {
+            background: #fadbd8;
+        }
+
+        .action-links a.toggle-active {
+            color: var(--secondary);
+        }
+
+        .action-links a.toggle-active:hover {
+            background: #d5f5e3;
+        }
+
+        .action-links a.toggle-inactive {
+            color: var(--danger);
+        }
+
+        .action-links a.toggle-inactive:hover {
+            background: #fadbd8;
+        }
+
+        /* ===== رسالة عدم وجود بيانات ===== */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-state .icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        /* ===== الترقيم ===== */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .pagination a,
+        .pagination span {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            text-decoration: none;
+            color: var(--text);
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        .pagination a:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .pagination .current {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .pagination .disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ===== الفوتر ===== */
+        .footer {
+            background: white;
+            padding: 16px 40px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-light);
+            font-size: 13px;
+            margin-top: auto;
+        }
+
+        /* ===== مؤشر التحميل ===== */
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid white;
+            border-top-color: var(--secondary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ===== Toast Notification ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.4s ease;
+            z-index: 1000;
+            max-width: 400px;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: var(--secondary);
+        }
+
+        .toast.error {
+            background: var(--danger);
+        }
+
+        .toast.info {
+            background: var(--primary);
+        }
+
+        /* ===== التجاوب ===== */
+        @media (max-width: 768px) {
+            .header {
+                padding: 0 16px;
+                flex-wrap: wrap;
+                height: auto;
+                padding: 12px 16px;
+                gap: 10px;
+            }
+
+            .header .nav {
+                gap: 16px;
+                flex-wrap: wrap;
+            }
+
+            .breadcrumb {
+                padding: 12px 16px;
+            }
+
+            .main-container {
+                padding: 0 16px 20px;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .page-header .stats {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .page-header .stats span {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+
+            .actions-bar {
+                flex-direction: column;
+            }
+
+            .actions-bar .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .actions-bar input[type="text"] {
+                width: 100% !important;
+                min-width: unset !important;
+            }
+
+            .report-table {
+                font-size: 12px;
+            }
+
+            .report-table thead th,
+            .report-table tbody td {
+                padding: 8px 10px;
+            }
+
+            .action-links {
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+            }
+
+            .action-links a {
+                font-size: 11px;
+                padding: 3px 8px;
+            }
+
+            .toast {
+                right: 16px;
+                left: 16px;
+                bottom: 16px;
+                max-width: unset;
+                font-size: 13px;
+                padding: 14px 18px;
+            }
+        }
+
+        @media print {
+            .header,
+            .breadcrumb,
+            .actions-bar,
+            .pagination,
+            .footer,
+            .action-links {
+                display: none !important;
+            }
+
+            .table-container {
+                box-shadow: none;
+                border: 1px solid var(--border);
+            }
+
+            .report-table thead {
+                background: #333 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== مؤشر التحميل ===== -->
+    <div class="loading" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- ===== Toast Notification ===== -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ===== الهيدر ===== -->
+    <header class="header">
+        <div class="logo">🏥 وزارة الصحة</div>
+        <nav class="nav">
+            <a href="/">الرئيسية</a>
+            <a href="#" class="active">خدماتي</a>
+            <a href="#">ملفي الصحي</a>
+            <a href="#">مواعيدي</a>
+        </nav>
+        <div style="display:flex;align-items:center;gap:12px;font-size:14px;">
+            <span>👤 أهلاً، أحمد</span>
+            <a href="#" style="color:rgba(255,255,255,0.6);text-decoration:none;font-size:13px;">تسجيل خروج</a>
+        </div>
+    </header>
+
+    <!-- ===== Breadcrumb ===== -->
+    <div class="breadcrumb">
+        🏠 الرئيسية › خدماتي › <span>التقارير الطبية</span>
+    </div>
+
+    <!-- ===== المحتوى ===== -->
+    <div class="main-container">
+
+        <!-- ===== رأس الصفحة ===== -->
+        <div class="page-header">
+            <h1>📋 قائمة التقارير الطبية</h1>
+            <div class="stats">
+                <span>📊 إجمالي التقارير: <strong id="totalCount">{{ total_reports|default:0 }}</strong></span>
+                <span>✅ النشطة: <strong id="activeCount">{{ active_reports|default:0 }}</strong></span>
+                <span>⛔ غير النشطة: <strong id="inactiveCount">{{ inactive_reports|default:0 }}</strong></span>
+                <span>📅 اليوم: <strong id="todayCount">{{ today_reports|default:0 }}</strong></span>
+            </div>
+        </div>
+
+        <!-- ===== شريط الإجراءات ===== -->
+        <div class="actions-bar">
+            <a href="{% url 'reports:create_report' %}" class="btn btn-success">
+                ➕ إنشاء تقرير جديد
+            </a>
+            <button class="btn btn-outline" onclick="window.print()">
+                🖨️ طباعة
+            </button>
+            <button class="btn btn-outline" onclick="refreshData()">
+                🔄 تحديث
+            </button>
+            
+            <!-- فلتر الحالة -->
+            <select id="statusFilter" class="btn btn-filter" 
+                    style="padding:10px 20px;border:none;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;background:var(--primary-light);color:white;"
+                    onchange="filterByStatus()">
+                <option value="all" style="background:white;color:var(--text);">📋 جميع التقارير</option>
+                <option value="active" style="background:white;color:var(--text);">✅ النشطة فقط</option>
+                <option value="inactive" style="background:white;color:var(--text);">⛔ غير النشطة فقط</option>
+            </select>
+
+            <div style="flex:1;"></div>
+            <input type="text" id="searchInput" placeholder="🔍 بحث في التقارير..." 
+                   style="padding:10px 16px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;min-width:200px;"
+                   onkeyup="searchReports()">
+        </div>
+
+        <!-- ===== الجدول ===== -->
+        <div class="table-container">
+            <div class="table-responsive">
+                <table class="report-table" id="reportTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>الرقم التسلسلي</th>
+                            <th>المريض</th>
+                            <th>رقم الهوية</th>
+                            <th>التشخيص</th>
+                            <th>تاريخ الدخول</th>
+                            <th>تاريخ الخروج</th>
+                            <th>عدد الأيام</th>
+                            <th>حالة التقرير</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody">
+                        {% if reports %}
+                            {% for report in reports %}
+                            <tr id="report-row-{{ report.id }}" class="{% if not report.is_active %}inactive-row{% endif %}">
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    <strong>{{ report.serial_no }}</strong>
+                                </td>
+                                <td>
+                                    {{ report.patient.name_ar }}
+                                    <br>
+                                    <small style="color:var(--text-light);font-size:11px;">{{ report.patient.name_en|default:'' }}</small>
+                                </td>
+                                <td>{{ report.patient.national_id }}</td>
+                                <td>
+                                    {% if report.disease_type %}
+                                        {{ report.disease_type.name_ar }}
+                                    {% elif report.custom_disease %}
+                                        {{ report.custom_disease }}
+                                    {% else %}
+                                        <span style="color:var(--text-light);">غير محدد</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ report.date_in_formatted|default:report.date_in|date:'d/m/Y' }}
+                                    <br>
+                                    <small style="color:var(--text-light);font-size:11px;">{{ report.date_in_hijri|default:'' }}</small>
+                                </td>
+                                <td>
+                                    {{ report.date_out_formatted|default:report.date_out|date:'d/m/Y' }}
+                                    <br>
+                                    <small style="color:var(--text-light);font-size:11px;">{{ report.date_out_hijri|default:'' }}</small>
+                                </td>
+                                <td>
+                                    <strong style="color:var(--primary);font-size:16px;">{{ report.days_count }}</strong>
+                                    <span style="font-size:11px;color:var(--text-light);">يوم</span>
+                                </td>
+                                <td>
+                                    {% if report.is_active %}
+                                        <span class="status-badge status-badge-active">✅ نشط</span>
+                                    {% else %}
+                                        <span class="status-badge status-badge-inactive">⛔ غير نشط</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="action-links">
+                                        <a href="{% url 'reports:report_detail' report.id %}" title="عرض التقرير">
+                                            👁️ عرض
+                                        </a>
+                                        
+                                        {% if report.is_active %}
+                                            <a href="#" onclick="toggleReportStatus({{ report.id }}, true)" 
+                                               class="toggle-inactive" title="إلغاء تفعيل التقرير">
+                                                ⛔ إلغاء تفعيل
+                                            </a>
+                                        {% else %}
+                                            <a href="#" onclick="toggleReportStatus({{ report.id }}, false)" 
+                                               class="toggle-active" title="تفعيل التقرير">
+                                                ✅ تفعيل
+                                            </a>
+                                        {% endif %}
+                                        
+                                        <a href="#" onclick="deleteReport({{ report.id }})" title="حذف التقرير" class="delete">
+                                            🗑️ حذف
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="10">
+                                    <div class="empty-state">
+                                        <div class="icon">📭</div>
+                                        <h3>لا توجد تقارير</h3>
+                                        <p>لم يتم إنشاء أي تقارير طبية حتى الآن.</p>
+                                        <a href="{% url 'reports:create_report' %}" class="btn btn-primary">
+                                            ➕ إنشاء أول تقرير
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== الترقيم ===== -->
+        {% if is_paginated %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a href="?page=1">&laquo; الأولى</a>
+                <a href="?page={{ page_obj.previous_page_number }}">السابق</a>
+            {% else %}
+                <span class="disabled">&laquo; الأولى</span>
+                <span class="disabled">السابق</span>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <span class="current">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a href="?page={{ num }}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}">التالي</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}">الأخيرة &raquo;</a>
+            {% else %}
+                <span class="disabled">التالي</span>
+                <span class="disabled">الأخيرة &raquo;</span>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- ===== الفوتر ===== -->
+    <footer class="footer">
+        © 2026 وزارة الصحة - المملكة العربية السعودية. جميع الحقوق محفوظة.
+    </footer>
+
+    <!-- ============================================================ -->
+    <!-- ===== JavaScript ===== -->
+    <!-- ============================================================ -->
+    <script>
+        // ===== CSRF Token =====
+        function getCSRFToken() {
+            const cookieValue = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                ?.split('=')[1];
+            return cookieValue || '';
+        }
+
+        // ===== Toast Notification =====
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type;
+            // Force reflow
+            void toast.offsetWidth;
+            toast.classList.add('show');
+            
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4000);
+        }
+
+        // ===== حذف التقرير =====
+        function deleteReport(reportId) {
+            if (!confirm('⚠️ هل أنت متأكد من حذف هذا التقرير؟ هذا الإجراء لا يمكن التراجع عنه.')) {
+                return;
+            }
+
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.classList.add('active');
+
+            fetch(`/reports/api/${reportId}/delete/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingOverlay.classList.remove('active');
+                if (data.success) {
+                    showToast('✅ ' + data.message, 'success');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showToast('❌ خطأ: ' + (data.error || 'حدث خطأ غير متوقع'), 'error');
+                }
+            })
+            .catch(error => {
+                loadingOverlay.classList.remove('active');
+                showToast('❌ خطأ في الاتصال: ' + error.message, 'error');
+            });
+        }
+
+        // ===== تبديل حالة التقرير (نشط/غير نشط) =====
+        function toggleReportStatus(reportId, currentStatus) {
+            const newStatus = currentStatus ? 'غير نشط' : 'نشط';
+            if (!confirm(`⚠️ هل أنت متأكد من تغيير حالة التقرير إلى "${newStatus}"؟`)) {
+                return;
+            }
+
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.classList.add('active');
+
+            fetch(`/reports/api/${reportId}/toggle-status/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingOverlay.classList.remove('active');
+                if (data.success) {
+                    showToast('✅ ' + data.message, 'success');
+                    // تحديث الصف مباشرة دون إعادة تحميل الصفحة
+                    updateRowStatus(reportId, data.is_active);
+                } else {
+                    showToast('❌ خطأ: ' + (data.error || 'حدث خطأ غير متوقع'), 'error');
+                }
+            })
+            .catch(error => {
+                loadingOverlay.classList.remove('active');
+                showToast('❌ خطأ في الاتصال: ' + error.message, 'error');
+            });
+        }
+
+        // ===== تحديث حالة الصف في الجدول =====
+        function updateRowStatus(reportId, isActive) {
+            const row = document.getElementById(`report-row-${reportId}`);
+            if (!row) return;
+
+            // تحديث الصنف
+            if (isActive) {
+                row.classList.remove('inactive-row');
+            } else {
+                row.classList.add('inactive-row');
+            }
+
+            // تحديث حالة التقرير في العمود
+            const statusCell = row.querySelector('td:nth-child(9)');
+            if (statusCell) {
+                if (isActive) {
+                    statusCell.innerHTML = '<span class="status-badge status-badge-active">✅ نشط</span>';
+                } else {
+                    statusCell.innerHTML = '<span class="status-badge status-badge-inactive">⛔ غير نشط</span>';
+                }
+            }
+
+            // تحديث زر التبديل
+            const actionCell = row.querySelector('td:nth-child(10) .action-links');
+            if (actionCell) {
+                const toggleLink = actionCell.querySelector('a.toggle-active, a.toggle-inactive');
+                if (toggleLink) {
+                    if (isActive) {
+                        toggleLink.className = 'toggle-inactive';
+                        toggleLink.textContent = '⛔ إلغاء تفعيل';
+                        toggleLink.setAttribute('onclick', `toggleReportStatus(${reportId}, true)`);
+                    } else {
+                        toggleLink.className = 'toggle-active';
+                        toggleLink.textContent = '✅ تفعيل';
+                        toggleLink.setAttribute('onclick', `toggleReportStatus(${reportId}, false)`);
+                    }
+                }
+            }
+
+            // تحديث الإحصائيات
+            updateStats();
+        }
+
+        // ===== تحديث الصفحة =====
+        function refreshData() {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.classList.add('active');
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        }
+
+        // ===== البحث في الجدول =====
+        function searchReports() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById('reportTable');
+            const rows = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < rows.length; i++) {
+                const cells = rows[i].getElementsByTagName('td');
+                let found = false;
+
+                for (let j = 0; j < cells.length; j++) {
+                    const cellText = cells[j].textContent.toLowerCase();
+                    if (cellText.indexOf(filter) > -1) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                rows[i].style.display = found ? '' : 'none';
+            }
+        }
+
+        // ===== فلتر حسب الحالة =====
+        function filterByStatus() {
+            const filter = document.getElementById('statusFilter').value;
+            const rows = document.querySelectorAll('#reportTableBody tr');
+
+            rows.forEach(row => {
+                const isInactive = row.classList.contains('inactive-row');
+                
+                if (filter === 'all') {
+                    row.style.display = '';
+                } else if (filter === 'active') {
+                    row.style.display = isInactive ? 'none' : '';
+                } else if (filter === 'inactive') {
+                    row.style.display = isInactive ? '' : 'none';
+                }
+            });
+        }
+
+        // ===== تحديث الإحصائيات =====
+        function updateStats() {
+            const rows = document.querySelectorAll('#reportTableBody tr:not(:last-child)');
+            const total = rows.length;
+            
+            let activeCount = 0;
+            let inactiveCount = 0;
+            const today = new Date().toDateString();
+            let todayCount = 0;
+
+            rows.forEach(row => {
+                // حساب النشط وغير النشط
+                if (row.classList.contains('inactive-row')) {
+                    inactiveCount++;
+                } else {
+                    activeCount++;
+                }
+
+                // حساب تقارير اليوم
+                const dateCell = row.querySelector('td:nth-child(6)');
+                if (dateCell) {
+                    const dateText = dateCell.textContent.trim();
+                    const dateParts = dateText.split('/');
+                    if (dateParts.length === 3) {
+                        const rowDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+                        if (rowDate.toDateString() === today) {
+                            todayCount++;
+                        }
+                    }
+                }
+            });
+
+            document.getElementById('totalCount').textContent = total;
+            document.getElementById('activeCount').textContent = activeCount;
+            document.getElementById('inactiveCount').textContent = inactiveCount;
+            document.getElementById('todayCount').textContent = todayCount;
+        }
+
+        // ===== إضافة حدث البحث الفوري =====
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('keyup', searchReports);
+            }
+            
+            // تحديث الإحصائيات
+            updateStats();
+        });
+    </script>
+
+</body>
+</html>
