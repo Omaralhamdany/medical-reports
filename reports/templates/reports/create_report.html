@@ -374,6 +374,14 @@
                     oninput="translateFullSentence('customHospitalAr', 'customHospitalEn')">
                 <input type="text" id="customHospitalEn" class="custom-input" 
                     placeholder="Hospital Name in English" style="margin-top:8px;">
+                <!-- حقل رفع شعار المستشفى (يظهر فقط عند اختيار "أخرى") -->
+                <input type="file" id="customHospitalLogo" class="custom-input" accept="image/*" style="margin-top:8px;">
+                <div id="customHospitalLogoPreview" class="custom-input" style="margin-top:8px; display:none;">
+                    <label>معاينة الشعار</label>
+                    <div style="text-align:center; padding:8px; border:1px dashed #ddd; border-radius:6px;">
+                        <img id="customHospitalLogoImg" src="" alt="معاينة الشعار" style="max-width:120px; max-height:80px; object-fit:contain;">
+                    </div>
+                </div>
                 
                 <div class="error-message" id="hospitalArError">المستشفى مطلوب</div>
             </div>
@@ -588,6 +596,9 @@
             const logoImg = document.getElementById('hospitalLogoPreview');
             const hospitalArInput = document.getElementById('hospitalAr');
             const hospitalEnInput = document.getElementById('hospitalEn');
+            const customLogoInput = document.getElementById('customHospitalLogo');
+            const customLogoPreview = document.getElementById('customHospitalLogoPreview');
+            const customLogoImg = document.getElementById('customHospitalLogoImg');
             
             const isCustom = select.value === 'CUSTOM';
             
@@ -597,6 +608,16 @@
             }
             if (customEn) {
                 customEn.classList.toggle('active', isCustom);
+            }
+            // إظهار حقل رفع الشعار للمستشفى المخصص
+            if (customLogoInput) {
+                customLogoInput.classList.toggle('active', isCustom);
+                // إذا لم نختَر مخصصاً نضغط على إخفاء معاينة الشعار المخصص
+                if (!isCustom && customLogoPreview) {
+                    customLogoPreview.style.display = 'none';
+                    if (customLogoImg) customLogoImg.src = '';
+                    customLogoInput.value = null;
+                }
             }
             
             if (!isCustom && select.value) {
@@ -610,7 +631,7 @@
                 if (hospitalArInput) hospitalArInput.value = nameAr;
                 if (hospitalEnInput) hospitalEnInput.value = nameEn;
                 
-                // عرض الشعار
+                // عرض الشعار الافتراضي للمستشفى من القائمة
                 if (logoPreview && logoImg) {
                     if (logoUrl && logoUrl !== 'None' && logoUrl !== '') {
                         logoImg.src = logoUrl;
@@ -633,6 +654,25 @@
                 if (hospitalEnInput) hospitalEnInput.value = '';
                 if (logoPreview) logoPreview.style.display = 'none';
                 if (logoImg) logoImg.src = '';
+                // إظهار/تهيئة معاينة الشعار المخصص (ستظهر فقط عند اختيار ملف)
+                if (customLogoPreview) customLogoPreview.style.display = 'none';
+                if (customLogoImg) customLogoImg.src = '';
+            }
+            
+            // إضافة مستمع لتحديث معاينة الشعار المخصص عند اختيار ملف جديد
+            if (customLogoInput && !customLogoInput.dataset.listenerAdded) {
+                customLogoInput.addEventListener('change', function(e) {
+                    const f = this.files && this.files[0] ? this.files[0] : null;
+                    if (!f) {
+                        if (customLogoPreview) customLogoPreview.style.display = 'none';
+                        if (customLogoImg) customLogoImg.src = '';
+                        return;
+                    }
+                    const objectUrl = URL.createObjectURL(f);
+                    if (customLogoImg) customLogoImg.src = objectUrl;
+                    if (customLogoPreview) customLogoPreview.style.display = 'block';
+                });
+                customLogoInput.dataset.listenerAdded = '1';
             }
         }
 
@@ -834,7 +874,7 @@
         // ============================================================
         // 🔥🔥🔥 حفظ البيانات والانتقال (نسخة محسّنة) 🔥🔥🔥
         // ============================================================
-        function saveAndRedirect() {
+        async function saveAndRedirect() {
             if (!validateForm()) return;
 
             // ===== استخراج بيانات المستشفى =====
@@ -883,6 +923,46 @@
                 specialty = customAr + ' / ' + customEn;
             }
 
+            // ===== إذا كان مستشفى مخصص — تأكد من إنشائه أولاً عن طريق الإرسال إلى CreateHospitalView
+            const isCustomHospital = hospitalSelect && hospitalSelect.value === 'CUSTOM';
+            let hospitalIdToSend = hospitalId;
+
+            if (isCustomHospital) {
+                // تحقق من وجود اسم المستشفى
+                if (!customHospitalAr) {
+                    alert('يرجى ملء اسم المستشفى بالعربية قبل الحفظ.');
+                    return;
+                }
+
+                const logoInput = document.getElementById('customHospitalLogo');
+                const logoFile = logoInput && logoInput.files && logoInput.files[0] ? logoInput.files[0] : null;
+                const form = new FormData();
+                form.append('name_ar', customHospitalAr);
+                form.append('name_en', customHospitalEn);
+                if (logoFile) form.append('logo', logoFile);
+
+                try {
+                    const createRes = await fetch('/reports/create_hospital/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCSRFToken(),
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: form
+                    });
+                    const createJson = await createRes.json();
+                    if (!createJson.success) {
+                        alert('حدث خطأ أثناء إنشاء المستشفى: ' + (createJson.error || 'خطأ غير معروف'));
+                        return;
+                    }
+                    hospitalIdToSend = createJson.id;
+                } catch (err) {
+                    console.error('خطأ أثناء إنشاء المستشفى:', err);
+                    alert('فشل إنشاء المستشفى. تحقق من الاتصال وحاول مرة أخرى.');
+                    return;
+                }
+            }
+
             const reportData = {
                 serialNo: document.getElementById('serialNo')?.value || generateSerial(),
                 nationalId: document.getElementById('nationalId')?.value.trim() || '',
@@ -904,7 +984,7 @@
                 // 🔥 بيانات المستشفى المحسنة
                 hospitalAr: hospitalAr,
                 hospitalEn: hospitalEn,
-                hospitalId: hospitalId,
+                hospitalId: hospitalIdToSend,
                 nationality: document.getElementById('natAr')?.value || '',
                 nationalityEn: document.getElementById('natEn')?.value || '',
                 relationship: document.getElementById('poiAr')?.value || '',
@@ -918,27 +998,26 @@
             localStorage.setItem('sharedMedicalData', JSON.stringify(reportData));
 
             // 🔥 إرسال البيانات إلى Django API
-            fetch('/reports/api/create/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCSRFToken(),
-                },
-                body: JSON.stringify(reportData)
-            })
-            .then(response => response.json())
-            .then(data => {
+            try {
+                const response = await fetch('/reports/api/create/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken(),
+                    },
+                    body: JSON.stringify(reportData)
+                });
+                const data = await response.json();
                 if (data.success) {
                     // الانتقال إلى صفحة التقرير
                     window.location.href = `/reports/${data.report_id}/detail/`;
                 } else {
                     alert('❌ خطأ: ' + (data.error || 'حدث خطأ غير متوقع'));
                 }
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Fetch Error:', error);
                 alert('❌ خطأ في الاتصال: ' + error.message);
-            });
+            }
         }
 
         // ============================================================
@@ -996,6 +1075,27 @@
             const hospitalSelect = document.getElementById('hospitalSelect');
             if (hospitalSelect) {
                 hospitalSelect.addEventListener('change', updateHospitalFields);
+            }
+
+            // ===== ملء الحقل الانجليزي تلقائياً عند كتابة اسم المستشفى بالعربي (للمستشفى المخصص) =====
+            const customHospitalArInput = document.getElementById('customHospitalAr');
+            const customHospitalEnInput = document.getElementById('customHospitalEn');
+            const hospitalEnInput = document.getElementById('hospitalEn');
+            if (customHospitalArInput) {
+                // استخدم translateFullSentence الموجودة بالفعل لملء الحقل الانجليزي الخاص بالمخصص
+                customHospitalArInput.addEventListener('input', function() {
+                    // استدعاء دالة الترجمة الموجودة لنسخ النص للعربية -> إنجليزي
+                    try { translateFullSentence('customHospitalAr', 'customHospitalEn'); } catch(e) { console.warn(e); }
+                    // انسخ الناتج أيضاً إلى الحقل العام hospitalEn ليظهر فوراً في النموذج
+                    setTimeout(function(){
+                        if (customHospitalEnInput && hospitalEnInput) hospitalEnInput.value = customHospitalEnInput.value || '';
+                    }, 0);
+                });
+            }
+            if (customHospitalEnInput) {
+                customHospitalEnInput.addEventListener('input', function(){
+                    if (hospitalEnInput) hospitalEnInput.value = customHospitalEnInput.value || '';
+                });
             }
         };
     </script>

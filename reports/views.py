@@ -50,6 +50,16 @@ from .utils import (
     save_barcode,
 )
 
+# Helper to return JsonResponse with CORS headers for simple deployments (Netlify frontend calling this API)
+def cors_json(data, status=200, origin='*'):
+    resp = JsonResponse(data, status=status)
+    # Allow the Netlify static site (or any origin during testing) to call this endpoint.
+    # For production, replace '*' with the specific Netlify site origin for security.
+    resp["Access-Control-Allow-Origin"] = origin
+    resp["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    resp["Access-Control-Allow-Headers"] = "Content-Type, X-Requested-With"
+    return resp
+
 
 # ============================================================
 # 1️⃣ API View - استقبال البيانات وحفظها
@@ -763,13 +773,13 @@ class ReportSearchAPIView(View):
 
         # ===== التحقق من وجود الحقول =====
         if not service_number:
-            return JsonResponse({
+            return cors_json({
                 'success': False,
                 'error': 'يرجى إدخال رمز الخدمة'
             }, status=400)
 
         if not national_id:
-            return JsonResponse({
+            return cors_json({
                 'success': False,
                 'error': 'يرجى إدخال رقم الهوية'
             }, status=400)
@@ -792,7 +802,7 @@ class ReportSearchAPIView(View):
         report = queryset.first()
 
         if not report:
-            return JsonResponse({
+            return cors_json({
                 'success': False,
                 'error': 'لا توجد بيانات مطابقة - تأكد من صحة رمز الخدمة ورقم الهوية'
             }, status=404)
@@ -844,14 +854,19 @@ class ReportSearchAPIView(View):
 
         print(f"📤 البيانات المرسلة: {data}")
 
-        return JsonResponse(data, status=200)
+        # Return with CORS headers so static Netlify site can fetch this endpoint.
+        response = cors_json(data, status=200)
+        return response
 
-
+    def options(self, request, *args, **kwargs):
+        """Support preflight CORS requests from the Netlify frontend."""
+        return cors_json({}, status=200)
 
 
 class CreateHospitalView(View):
     """
     صفحة لإضافة مستشفى مباشرة من الموقع بدل من لوحة الإدارة
+    دعم استدعاء AJAX: عند وجود هيدر X-Requested-With سيتم إرجاع JSON
     """
     template_name = 'reports/create_hospital.html'
 
@@ -866,6 +881,9 @@ class CreateHospitalView(View):
         logo = request.FILES.get('logo')
 
         if not name_ar:
+            # إذا كانت طلب AJAX فأرجع JSON، وإلا أعِد عرض النموذج مع رسالة خطأ
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'اسم المستشفى بالعربية مطلوب'}, status=400)
             return render(request, self.template_name, {
                 'error': 'اسم المستشفى بالعربية مطلوب',
                 'name_ar': name_ar,
@@ -893,6 +911,14 @@ class CreateHospitalView(View):
                 hospital.logo = logo
             hospital.is_active = True
             hospital.save()
+
+        # إذا كان استدعاء AJAX، أرجع JSON مع المعرف ورابط الشعار (إن وجد)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'id': hospital.id,
+                'logo_url': hospital.get_logo_url() if hasattr(hospital, 'get_logo_url') else (hospital.logo.url if hospital.logo else None)
+            }, status=200)
 
         return redirect('reports:create_report')
 

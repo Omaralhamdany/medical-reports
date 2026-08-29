@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>الاستعلام عن الخدمات الطبية — صفة (نسخة مستقلة)</title>
+  <meta name="description" content="صفحة استعلام مستقلة موجهة لاستدعاء API الخلفي على PythonAnywhere">
+  <style>
+    body{font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background:#f7fafc;padding:24px;}
+    .card{max-width:680px;margin:36px auto;background:#fff;padding:20px;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.06)}
+    h1{font-size:20px;margin-bottom:8px}
+    label{display:block;margin-top:12px;font-weight:700}
+    input{width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;margin-top:6px}
+    .btn{margin-top:16px;background:#2563eb;color:#fff;border:none;padding:12px 16px;border-radius:8px;cursor:pointer}
+    pre{background:#0f172a;color:#dbeafe;padding:12px;border-radius:6px;white-space:pre-wrap}
+    .result{margin-top:14px}
+    .small{font-size:13px;color:#4b5563}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>الاستعلام عن الخدمات الطبية</h1>
+    <p class="small">أدخل رمز الخدمة ورقم الهوية ثم اضغط «استعلام». هذه الصفحة تعمل كصفحة مستقلة يمكن رفعها على Netlify وتستدعي واجهة برمجة التطبيقات في PythonAnywhere.</p>
+
+    <label for="service_code">رمز/رقم الخدمة</label>
+    <input id="service_code" placeholder="أدخل رمز الخدمة (مثال: GSL2026000001)">
+
+    <label for="national_id">رقم الهوية / الإقامة</label>
+    <input id="national_id" placeholder="مثال: 1234567890">
+
+    <button id="btnQuery" class="btn">استعلام</button>
+
+    <div class="result">
+      <h2 style="font-size:16px;margin-top:12px">النتيجة</h2>
+      <div id="status" class="small">-</div>
+      <pre id="output" style="display:none"></pre>
+    </div>
+
+    <hr style="margin-top:16px">
+    <p class="small">قبل نشر: قم بتعديل قيمة API_BASE أدناه إلى رابط تطبيقك على PythonAnywhere مثل: https://your-username.pythonanywhere.com</p>
+  </div>
+
+  <script>
+    // ضع هنا رابط الـ backend في PythonAnywhere بدون نهاية slash، مثال:
+    // const API_BASE = 'https://your-username.pythonanywhere.com';
+    // بعد رفع التطبيق إلى PythonAnywhere عدّل هذا السطر قبل النشر على Netlify
+    const API_BASE = 'https://REPLACE_WITH_YOUR_PYTHONANYWHERE_DOMAIN';
+
+    const btn = document.getElementById('btnQuery');
+    const out = document.getElementById('output');
+    const statusEl = document.getElementById('status');
+
+    function showError(text){
+      statusEl.textContent = 'خطأ: ' + text;
+      out.style.display = 'none';
+    }
+
+    btn.addEventListener('click', async function(){
+      const code = document.getElementById('service_code').value.trim();
+      const nid = document.getElementById('national_id').value.trim();
+
+      if(!code){ showError('الرجاء إدخال رمز الخدمة'); return; }
+      if(!nid){ showError('الرجاء إدخال رقم الهوية'); return; }
+
+      statusEl.textContent = 'جاري الاستعلام...';
+      out.style.display = 'none';
+
+      try{
+        // endpoint في المشروع: /reports/api/search/؟service_number=...&national_id=...
+        const url = API_BASE + '/reports/api/search/?service_number=' + encodeURIComponent(code) + '&national_id=' + encodeURIComponent(nid);
+        const res = await fetch(url, { method: 'GET' });
+        if (!res.ok) {
+          const txt = await res.text();
+          showError('استجابة غير متوقعة من الخادم: ' + res.status + ' - ' + txt.slice(0,300));
+          return;
+        }
+        const json = await res.json();
+        if (!json.success) {
+          statusEl.textContent = 'لا توجد نتيجة: ' + (json.error || 'غير متوفر');
+          out.style.display = 'none';
+          return;
+        }
+        statusEl.textContent = 'تم العثور على نتيجة';
+        out.style.display = 'block';
+        out.textContent = JSON.stringify(json.report, null, 2);
+      } catch (e){
+        showError(e.message || e);
+      }
+    });
+
+    // دعم تعبئة الحقول من query string (مثلاً عندما تأتي من رابط التقرير في التطبيق الرئيسي)
+    (function(){
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+      if(code) document.getElementById('service_code').value = code;
+    })();
+  </script>
+</body>
+</html>
